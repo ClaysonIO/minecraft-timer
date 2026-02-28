@@ -1,0 +1,27 @@
+---
+description: Append completed prompts to PROMPT_HISTORY.md when finishing a task
+alwaysApply: true
+---
+
+# Prompt history
+
+When you have finished responding to the user's prompt (task complete, no further edits planned):
+
+1. Open `PROMPT_HISTORY.md` and read the file to get the current count of entries (the highest "## N." heading).
+2. Append a new entry:
+   - Use the next sequential number (e.g. if last is `## 10.`, add `## 11.`).
+   - Add a short title (one line, summarizing the request; e.g. "Add cursor rule for prompt history").
+   - On the next line(s), add the user's full prompt text, unchanged.
+   - Add a horizontal rule `---` after the prompt.
+
+**Format for each new entry:**
+
+```markdown
+## N. Short title
+
+User's full prompt here (exactly as they wrote it).
+
+---
+```
+
+Do this as the last step before you consider the conversation turn complete. If the user only asked a question (no implementation or multi-step task), you may skip appending.

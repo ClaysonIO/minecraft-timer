@@ -123,6 +123,11 @@
       0%, 100% { background: linear-gradient(135deg, #ff1a1a 0%, #aa0000 100%); }
       50%       { background: linear-gradient(135deg, #550000 0%, #1a0000 100%); }
     }
+    /* Flat red after 30 s of flashing */
+    .timer-panel.expired.expired-flat {
+      animation: none;
+      background: linear-gradient(135deg, #ff1a1a 0%, #aa0000 100%);
+    }
 
     /* ── Close (X) button ────────────────────────────────────── */
     .close-timer-btn {
@@ -387,15 +392,132 @@
     }
     .mc-btn.remove-btn:hover  { filter: brightness(1.2); }
     .mc-btn.remove-btn:active { box-shadow: 0 1px 0 #4a0a0a; top: 3px; }
+
+    /* ── Settings cog button ──────────────────────────────────── */
+    .settings-btn {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(14px, 2vw, 20px);
+      line-height: 1;
+      padding: 6px 10px 8px;
+      background: #5a3e1b;
+      color: #f0c040;
+      border: none;
+      cursor: pointer;
+      text-shadow: 1px 1px 0 #000;
+      box-shadow: 0 4px 0 #2a1a00, inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.3);
+      image-rendering: pixelated;
+    }
+    .settings-btn:hover { filter: brightness(1.2); }
+    .settings-btn:active { transform: translateY(calc(-50% + 3px)); box-shadow: 0 1px 0 #2a1a00, inset 0 1px 0 rgba(0,0,0,0.3); }
+
+    /* ── Settings modal ───────────────────────────────────────── */
+    #settings-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    #settings-overlay.visible { display: flex; }
+
+    #settings-box {
+      background: linear-gradient(180deg, #2a1a0a 0%, #1a120b 100%);
+      border: 4px solid #8B6914;
+      box-shadow: 0 0 0 4px #000, 6px 6px 0 #000;
+      padding: 32px 28px 24px;
+      max-width: 500px;
+      width: 92%;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+
+    #settings-box h2 {
+      font-size: clamp(9px, 1.5vw, 13px);
+      color: #f0c040;
+      text-shadow: 2px 2px 0 #000;
+      letter-spacing: 2px;
+    }
+
+    #settings-box label {
+      font-size: clamp(7px, 1vw, 9px);
+      color: rgba(255,255,255,0.6);
+      display: block;
+      margin-bottom: 6px;
+      text-align: left;
+      width: 100%;
+    }
+
+    #settings-hint {
+      font-size: clamp(6px, 0.8vw, 8px);
+      color: rgba(255,255,255,0.4);
+      text-align: left;
+      width: 100%;
+      line-height: 1.6;
+    }
+
+    #announcement-input {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(7px, 1vw, 9px);
+      background: #000;
+      color: #f0c040;
+      border: 3px solid #f0c040;
+      padding: 10px 12px;
+      width: 100%;
+      outline: none;
+      box-shadow: 3px 3px 0 #7a5200, inset 2px 2px 0 #2a2000;
+      image-rendering: pixelated;
+      letter-spacing: 1px;
+      resize: vertical;
+      min-height: 80px;
+      line-height: 1.8;
+    }
+    #announcement-input:focus { border-color: #fff; box-shadow: 3px 3px 0 #555, inset 2px 2px 0 #222; }
+
+    #settings-btns { display: flex; gap: 16px; }
+
+    .mc-btn.save-btn {
+      background: #5d8c3d;
+      color: #fff;
+      box-shadow: 0 4px 0 #2d4a1e, inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.3);
+      text-shadow: 1px 1px 0 #000;
+    }
+    .mc-btn.save-btn:hover  { filter: brightness(1.2); }
+    .mc-btn.save-btn:active { box-shadow: 0 1px 0 #2d4a1e; top: 3px; }
   </style>
 </head>
 <body>
   <header>
+    <button class="settings-btn" id="settings-btn" title="Settings">&#9881;</button>
     <h1>&#9733; MINECRAFT TIMER &#9733;</h1>
     <button class="add-timer-btn" id="add-timer-btn" title="Add new timer">+</button>
   </header>
 
   <div class="timers-container" id="timers-container"></div>
+
+  <!-- Settings modal (hidden by default) -->
+  <div id="settings-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div id="settings-box">
+      <h2 id="settings-title">SETTINGS</h2>
+      <div style="width:100%">
+        <label for="announcement-input">ANNOUNCEMENT MESSAGE</label>
+        <textarea id="announcement-input" rows="3"></textarea>
+        <p id="settings-hint">Use {{name}} as a placeholder for the timer's name.</p>
+      </div>
+      <div id="settings-btns">
+        <button class="mc-btn cancel-btn" id="settings-cancel">CANCEL</button>
+        <button class="mc-btn save-btn"   id="settings-save">SAVE</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Confirmation modal (hidden by default) -->
   <div id="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-text">
@@ -475,6 +597,20 @@
       var timerList   = [];  // { id, displayName }
       var timersById  = {};  // id → Timer instance
 
+      /* ── Announcement template ───────────────────────────────── */
+      var ANNOUNCEMENT_DEFAULT = '{{name}}, your minecraft time is over! Please turn off your device and give it to Daddy';
+      function loadAnnouncement() {
+        try {
+          var raw = localStorage.getItem('mc-timer-announcement');
+          if (raw && raw.trim().length > 0) return raw;
+        } catch (e) {}
+        return ANNOUNCEMENT_DEFAULT;
+      }
+      function saveAnnouncement(text) {
+        try { localStorage.setItem('mc-timer-announcement', text); } catch (e) {}
+      }
+      var announcementTemplate = loadAnnouncement();
+
       /* ── Create DOM for one timer panel ─────────────────────── */
       function createTimerPanel(id, displayName) {
         var panel = document.createElement('div');
@@ -543,11 +679,12 @@
 
       /* ── Timer class ─────────────────────────────────────────── */
       function Timer(id, displayName) {
-        this.id          = id;
-        this.displayName = displayName;
-        this.expired     = false;
-        this.running     = false;
-        this.interval    = null;
+        this.id                  = id;
+        this.displayName         = displayName;
+        this.expired             = false;
+        this.running             = false;
+        this.interval            = null;
+        this.expiredFlatTimeoutId = null;
 
         this.panel       = document.getElementById('panel-' + id);
         this.track       = document.getElementById('track-' + id);
@@ -705,14 +842,23 @@
         this.track.classList.remove('low', 'critical');
         this.track.classList.add('expired');
         playAlarm();
-        speak(this.displayName + ', your minecraft time is over! Please turn off your device and give it to Daddy');
+        speak(announcementTemplate.replace(/\{\{name\}\}/g, this.displayName));
         this.expiredMsg.classList.add('visible');
+        var self = this;
+        this.expiredFlatTimeoutId = setTimeout(function () {
+          self.panel.classList.add('expired-flat');
+          self.expiredFlatTimeoutId = null;
+        }, 30000);
         this._render();
       };
 
       Timer.prototype._clearExpired = function () {
         this.expired = false;
-        this.panel.classList.remove('expired');
+        if (this.expiredFlatTimeoutId !== null) {
+          clearTimeout(this.expiredFlatTimeoutId);
+          this.expiredFlatTimeoutId = null;
+        }
+        this.panel.classList.remove('expired', 'expired-flat');
         this.expiredMsg.classList.remove('visible');
         this.track.classList.remove('low', 'critical', 'expired');
       };
@@ -720,6 +866,10 @@
       Timer.prototype.destroy = function () {
         clearInterval(this.interval);
         this.interval = null;
+        if (this.expiredFlatTimeoutId !== null) {
+          clearTimeout(this.expiredFlatTimeoutId);
+          this.expiredFlatTimeoutId = null;
+        }
       };
 
       Timer.prototype._render = function () {
@@ -812,8 +962,40 @@
         if (pendingRemoveId) { executeRemove(pendingRemoveId); }
         closeConfirm();
       });
+
+      /* ── Settings dialog ─────────────────────────────────────── */
+      function openSettings() {
+        document.getElementById('announcement-input').value = announcementTemplate;
+        document.getElementById('settings-overlay').classList.add('visible');
+        document.getElementById('announcement-input').focus();
+      }
+      function closeSettings() {
+        document.getElementById('settings-overlay').classList.remove('visible');
+      }
+      function saveSettings() {
+        var val = document.getElementById('announcement-input').value.trim();
+        if (val.length > 0) {
+          announcementTemplate = val;
+          saveAnnouncement(val);
+        }
+        closeSettings();
+      }
+
+      document.getElementById('settings-btn').addEventListener('click', openSettings);
+      document.getElementById('settings-cancel').addEventListener('click', closeSettings);
+      document.getElementById('settings-save').addEventListener('click', saveSettings);
+      document.getElementById('settings-overlay').addEventListener('click', function (e) {
+        if (e.target === this) closeSettings();
+      });
+
       document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') closeConfirm();
+        if (e.key === 'Escape') {
+          if (document.getElementById('settings-overlay').classList.contains('visible')) {
+            closeSettings();
+          } else {
+            closeConfirm();
+          }
+        }
       });
 
       // Wire up close buttons dynamically (event delegation)

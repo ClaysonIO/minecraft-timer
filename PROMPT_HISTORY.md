@@ -92,3 +92,19 @@ To-do's from the plan have already been created. Do not create them again. Mark 
 I'm going to add this to git. Create a new file, called 'PROMPT_HISTORY.md' -- include all prompts that I used in this repo.
 
 Also create a readme explaining the project.
+
+---
+
+## 11. Cursor rule for prompt history
+
+Add a cursor rule so that any time an agent finishes a prompt, it adds the prompts to the @PROMPT_HISTORY.md
+
+---
+
+## 12. Settings cog and 30s flash limit
+
+Add a new settings cog in the top left. Clicking it should open a dialog that lets us change the announcement message, with {{name}} as a place holder for the current name. 
+
+Also, the flashing should end after 30 seconds, and just go to a flat red until it's reset.
+
+---
