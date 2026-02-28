@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minecraft Timer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Press Start 2P', monospace;
+      background-color: #1a120b;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(0,0,0,0.25) 31px, rgba(0,0,0,0.25) 32px),
+        repeating-linear-gradient(90deg, transparent, transparent 31px, rgba(0,0,0,0.25) 31px, rgba(0,0,0,0.25) 32px),
+        linear-gradient(135deg, #2d4a1e 0%, #1a2e0f 30%, #3b2a1a 60%, #1a120b 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    header {
+      display: flex;
+      align-items: center;
+      padding: 14px 14px 10px;
+      background: linear-gradient(180deg, #2a1a0a 0%, #1a120b 100%);
+      border-bottom: 4px solid #5a3e1b;
+      box-shadow: 0 4px 0 #000, inset 0 -4px 0 #8B6914;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    header h1 {
+      flex: 1;
+      text-align: center;
+      color: #f0c040;
+      font-size: clamp(12px, 2.6vw, 26px);
+      text-shadow: 3px 3px 0 #7a5200, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+      letter-spacing: 2px;
+      image-rendering: pixelated;
+    }
+
+    .add-timer-btn {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(14px, 2vw, 20px);
+      line-height: 1;
+      padding: 6px 14px 8px;
+      background: #5d8c3d;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      text-shadow: 1px 1px 0 #000;
+      box-shadow: 0 4px 0 #2d4a1e, inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.3);
+      image-rendering: pixelated;
+    }
+    .add-timer-btn:hover { filter: brightness(1.2); }
+    .add-timer-btn:active { transform: translateY(calc(-50% + 3px)); box-shadow: 0 1px 0 #2d4a1e, inset 0 1px 0 rgba(0,0,0,0.3); }
+
+    /* ── Timers container: flex wrap tiling ──────────────────── */
+    .timers-container {
+      display: flex;
+      flex-wrap: wrap;
+      flex: 1;
+      overflow: auto;
+      align-content: stretch;
+    }
+
+    /* Each panel fills equally; min-width means they wrap below ~280px */
+    .timer-panel {
+      flex: 1 1 280px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      gap: 16px;
+      position: relative;
+      border: 2px solid #000;
+      min-height: 340px;
+    }
+
+    /* Cycle through accent palettes by index */
+    .timer-panel[data-accent="0"] { background: linear-gradient(135deg, #1e3a1e 0%, #0f2010 100%); }
+    .timer-panel[data-accent="1"] { background: linear-gradient(135deg, #1a1a3a 0%, #0f0f20 100%); }
+    .timer-panel[data-accent="2"] { background: linear-gradient(135deg, #3a1a1a 0%, #200f0f 100%); }
+    .timer-panel[data-accent="3"] { background: linear-gradient(135deg, #2a1a3a 0%, #160f20 100%); }
+    .timer-panel[data-accent="4"] { background: linear-gradient(135deg, #1a2a3a 0%, #0f1420 100%); }
+    .timer-panel[data-accent="5"] { background: linear-gradient(135deg, #2a2a1a 0%, #1a1a0f 100%); }
+
+    /* Stroke colors per accent */
+    .timer-panel[data-accent="0"] .circle-track { stroke: #5dbc5d; }
+    .timer-panel[data-accent="1"] .circle-track { stroke: #5d8cbc; }
+    .timer-panel[data-accent="2"] .circle-track { stroke: #bc5d5d; }
+    .timer-panel[data-accent="3"] .circle-track { stroke: #a05dbc; }
+    .timer-panel[data-accent="4"] .circle-track { stroke: #5d9abc; }
+    .timer-panel[data-accent="5"] .circle-track { stroke: #bcb05d; }
+
+    /* Name label colors per accent */
+    .timer-panel[data-accent="0"] .player-name { color: #7dff7d; border-color: #3d8c3d; background: #1a3a1a; box-shadow: 3px 3px 0 #000, inset -2px -2px 0 #1a3a1a, inset 2px 2px 0 #3d8c3d; }
+    .timer-panel[data-accent="1"] .player-name { color: #7db3ff; border-color: #3d5a8c; background: #1a1a3a; box-shadow: 3px 3px 0 #000, inset -2px -2px 0 #1a1a3a, inset 2px 2px 0 #3d5a8c; }
+    .timer-panel[data-accent="2"] .player-name { color: #ff9d9d; border-color: #8c3d3d; background: #3a1a1a; box-shadow: 3px 3px 0 #000, inset -2px -2px 0 #3a1a1a, inset 2px 2px 0 #8c3d3d; }
+    .timer-panel[data-accent="3"] .player-name { color: #d49dff; border-color: #6a3d8c; background: #2a1a3a; box-shadow: 3px 3px 0 #000, inset -2px -2px 0 #2a1a3a, inset 2px 2px 0 #6a3d8c; }
+    .timer-panel[data-accent="4"] .player-name { color: #9dd4ff; border-color: #3d6a8c; background: #1a2a3a; box-shadow: 3px 3px 0 #000, inset -2px -2px 0 #1a2a3a, inset 2px 2px 0 #3d6a8c; }
+    .timer-panel[data-accent="5"] .player-name { color: #ffe07d; border-color: #8c7a3d; background: #2a2a1a; box-shadow: 3px 3px 0 #000, inset -2px -2px 0 #2a2a1a, inset 2px 2px 0 #8c7a3d; }
+
+    /* Bright red flashing when expired */
+    .timer-panel.expired {
+      animation: flashExpired 0.5s steps(1) infinite;
+      box-shadow: 0 0 60px #ff0000, inset 0 0 40px rgba(255,0,0,0.3) !important;
+    }
+    @keyframes flashExpired {
+      0%, 100% { background: linear-gradient(135deg, #ff1a1a 0%, #aa0000 100%); }
+      50%       { background: linear-gradient(135deg, #550000 0%, #1a0000 100%); }
+    }
+
+    /* ── Close (X) button ────────────────────────────────────── */
+    .close-timer-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 11px;
+      padding: 4px 8px;
+      background: #5a2020;
+      color: #ff9d9d;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #2a0a0a, inset 0 1px 0 rgba(255,255,255,0.15);
+      text-shadow: 1px 1px 0 #000;
+      z-index: 5;
+    }
+    .close-timer-btn:hover { filter: brightness(1.3); }
+    .close-timer-btn:active { transform: translateY(2px); box-shadow: none; }
+    .close-timer-btn.hidden { display: none; }
+
+    /* ── Player name ─────────────────────────────────────────── */
+    .player-name {
+      font-size: clamp(11px, 2vw, 20px);
+      letter-spacing: 3px;
+      text-shadow: 2px 2px 0 #000;
+      padding: 8px 16px;
+      border: 3px solid;
+      image-rendering: pixelated;
+      cursor: pointer;
+    }
+    .player-name:hover { filter: brightness(1.3); }
+
+    /* Name edit input */
+    .name-edit-wrapper {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+    .name-edit-wrapper.visible { display: flex; }
+    .name-edit-wrapper label {
+      font-size: clamp(7px, 1vw, 9px);
+      color: rgba(255,255,255,0.6);
+    }
+    .name-edit-input {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(11px, 1.8vw, 16px);
+      background: #000;
+      color: #f0c040;
+      border: 3px solid #f0c040;
+      padding: 6px 10px;
+      width: 160px;
+      text-align: center;
+      outline: none;
+      box-shadow: 3px 3px 0 #7a5200, inset 2px 2px 0 #2a2000;
+      image-rendering: pixelated;
+      letter-spacing: 2px;
+    }
+    .name-edit-input:focus { border-color: #fff; box-shadow: 3px 3px 0 #555, inset 2px 2px 0 #222; }
+
+    /* ── SVG Circle Timer ────────────────────────────────────── */
+    .circle-wrapper {
+      position: relative;
+      cursor: pointer;
+    }
+    .circle-wrapper:hover .time-display {
+      text-shadow: 0 0 12px currentColor, 2px 2px 0 #000;
+    }
+    .circle-wrapper svg {
+      display: block;
+      filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
+    }
+    .circle-bg {
+      fill: none;
+      stroke: rgba(0,0,0,0.5);
+      stroke-width: 14;
+    }
+    .circle-track {
+      fill: none;
+      stroke-width: 14;
+      stroke-linecap: square;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+      transition: stroke-dashoffset 0.9s linear, stroke 0.5s;
+    }
+    .circle-track.low      { stroke: #f0c040 !important; }
+    .circle-track.critical { stroke: #e05050 !important; }
+    .circle-track.expired  { stroke: #ff4444 !important; }
+
+    .time-display-group {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      width: 100%;
+    }
+    .time-display {
+      font-size: clamp(15px, 3vw, 30px);
+      color: #fff;
+      text-shadow: 2px 2px 0 #000;
+      cursor: pointer;
+      display: block;
+      line-height: 1;
+      padding: 6px 0;
+      letter-spacing: 2px;
+      image-rendering: pixelated;
+    }
+    .edit-hint {
+      font-size: clamp(6px, 0.7vw, 8px);
+      color: rgba(255,255,255,0.4);
+      margin-top: 5px;
+      display: block;
+    }
+
+    /* Time edit input */
+    .edit-input-wrapper {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 80%;
+    }
+    .edit-input-wrapper.visible { display: flex; }
+    .edit-input-wrapper label { font-size: clamp(7px, 1vw, 10px); color: rgba(255,255,255,0.6); }
+    .edit-input {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(14px, 2.5vw, 22px);
+      background: #000;
+      color: #f0c040;
+      border: 3px solid #f0c040;
+      padding: 8px 12px;
+      width: 100%;
+      text-align: center;
+      outline: none;
+      box-shadow: 3px 3px 0 #7a5200, inset 2px 2px 0 #2a2000;
+      image-rendering: pixelated;
+    }
+    .edit-input:focus { border-color: #fff; box-shadow: 3px 3px 0 #555, inset 2px 2px 0 #222; }
+
+    /* ── Buttons ─────────────────────────────────────────────── */
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+    .mc-btn {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(7px, 1.1vw, 11px);
+      padding: clamp(7px, 1vw, 10px) clamp(8px, 1.4vw, 14px);
+      border: none;
+      cursor: pointer;
+      image-rendering: pixelated;
+      letter-spacing: 1px;
+      transition: filter 0.1s;
+      position: relative;
+      top: 0;
+    }
+    .mc-btn:active { top: 3px; }
+
+    .mc-btn.start-btn {
+      background: #5d8c3d;
+      color: #fff;
+      box-shadow: 0 4px 0 #2d4a1e, inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.3);
+      text-shadow: 1px 1px 0 #000;
+    }
+    .mc-btn.start-btn:hover  { filter: brightness(1.2); }
+    .mc-btn.start-btn:active { box-shadow: 0 1px 0 #2d4a1e, inset 0 1px 0 rgba(0,0,0,0.3); }
+
+    .mc-btn.pause-btn {
+      background: #8B6914;
+      color: #fff;
+      box-shadow: 0 4px 0 #4a3800, inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.3);
+      text-shadow: 1px 1px 0 #000;
+    }
+    .mc-btn.pause-btn:hover  { filter: brightness(1.2); }
+    .mc-btn.pause-btn:active { box-shadow: 0 1px 0 #4a3800, inset 0 1px 0 rgba(0,0,0,0.3); }
+
+    .mc-btn.reset-btn {
+      background: #5a3e1b;
+      color: #ccc;
+      box-shadow: 0 4px 0 #2a1a00, inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.3);
+      text-shadow: 1px 1px 0 #000;
+    }
+    .mc-btn.reset-btn:hover  { filter: brightness(1.2); }
+    .mc-btn.reset-btn:active { box-shadow: 0 1px 0 #2a1a00, inset 0 1px 0 rgba(0,0,0,0.3); }
+
+    /* ── Expired message ─────────────────────────────────────── */
+    .expired-msg {
+      font-size: clamp(9px, 1.2vw, 12px);
+      color: #fff;
+      text-shadow: 2px 2px 0 #000, 0 0 10px #ff0000;
+      display: none;
+      text-align: center;
+      line-height: 1.8;
+      animation: blink 0.5s steps(1) infinite;
+    }
+    .expired-msg.visible { display: block; }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    /* ── Confirmation modal ───────────────────────────────────── */
+    #confirm-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    #confirm-overlay.visible { display: flex; }
+
+    #confirm-box {
+      background: linear-gradient(180deg, #2a1a0a 0%, #1a120b 100%);
+      border: 4px solid #8B6914;
+      box-shadow: 0 0 0 4px #000, 6px 6px 0 #000;
+      padding: 32px 28px 24px;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+    }
+
+    #confirm-box p {
+      font-size: clamp(9px, 1.5vw, 13px);
+      color: #f0c040;
+      text-shadow: 2px 2px 0 #000;
+      line-height: 1.9;
+    }
+
+    #confirm-box p span#confirm-name {
+      color: #fff;
+    }
+
+    #confirm-btns {
+      display: flex;
+      gap: 16px;
+    }
+
+    .mc-btn.cancel-btn {
+      background: #5a3e1b;
+      color: #ccc;
+      box-shadow: 0 4px 0 #2a1a00, inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.3);
+      text-shadow: 1px 1px 0 #000;
+    }
+    .mc-btn.cancel-btn:hover  { filter: brightness(1.2); }
+    .mc-btn.cancel-btn:active { box-shadow: 0 1px 0 #2a1a00; top: 3px; }
+
+    .mc-btn.remove-btn {
+      background: #8c2020;
+      color: #ffb0b0;
+      box-shadow: 0 4px 0 #4a0a0a, inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.3);
+      text-shadow: 1px 1px 0 #000;
+    }
+    .mc-btn.remove-btn:hover  { filter: brightness(1.2); }
+    .mc-btn.remove-btn:active { box-shadow: 0 1px 0 #4a0a0a; top: 3px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>&#9733; MINECRAFT TIMER &#9733;</h1>
+    <button class="add-timer-btn" id="add-timer-btn" title="Add new timer">+</button>
+  </header>
+
+  <div class="timers-container" id="timers-container"></div>
+
+  <!-- Confirmation modal (hidden by default) -->
+  <div id="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-text">
+    <div id="confirm-box">
+      <p id="confirm-text">Remove timer<br><span id="confirm-name"></span>?</p>
+      <div id="confirm-btns">
+        <button class="mc-btn cancel-btn" id="confirm-cancel">CANCEL</button>
+        <button class="mc-btn remove-btn" id="confirm-remove">REMOVE</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var CIRCUMFERENCE = 2 * Math.PI * 96;
+      var NUM_ACCENTS   = 6;
+
+      /* ── Audio ───────────────────────────────────────────────── */
+      var audioCtx = null;
+      function getAudioCtx() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        return audioCtx;
+      }
+      function playAlarm() {
+        try {
+          var ctx = getAudioCtx();
+          [{ freq: 880, s: 0.00, d: 0.18 }, { freq: 660, s: 0.22, d: 0.18 }, { freq: 440, s: 0.44, d: 0.32 }]
+            .forEach(function (b) {
+              var osc = ctx.createOscillator(), g = ctx.createGain();
+              osc.connect(g); g.connect(ctx.destination);
+              osc.type = 'square';
+              osc.frequency.setValueAtTime(b.freq, ctx.currentTime + b.s);
+              g.gain.setValueAtTime(0.28, ctx.currentTime + b.s);
+              g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + b.s + b.d);
+              osc.start(ctx.currentTime + b.s);
+              osc.stop(ctx.currentTime + b.s + b.d + 0.01);
+            });
+        } catch (e) {}
+      }
+      function speak(text) {
+        if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        var u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.9; u.pitch = 0.8;
+        window.speechSynthesis.speak(u);
+      }
+
+      /* ── Timer-state localStorage ────────────────────────────── */
+      function saveState(id, state) {
+        try { localStorage.setItem('mc-timer-' + id, JSON.stringify(state)); } catch (e) {}
+      }
+      function loadState(id) {
+        try {
+          var raw = localStorage.getItem('mc-timer-' + id);
+          if (raw) { var s = JSON.parse(raw); if (s && typeof s.totalSeconds === 'number') return s; }
+        } catch (e) {}
+        return { totalSeconds: 0, remaining: 0, running: false, paused: false, startedAt: null };
+      }
+
+      /* ── Timer-list localStorage ─────────────────────────────── */
+      function loadTimerList() {
+        try {
+          var raw = localStorage.getItem('mc-timer-list');
+          if (raw) {
+            var arr = JSON.parse(raw);
+            if (Array.isArray(arr) && arr.length > 0) return arr;
+          }
+        } catch (e) {}
+        var defaults = [{ id: 'child1', displayName: 'Child 1' }, { id: 'child2', displayName: 'Child 2' }];
+        saveTimerList(defaults);
+        return defaults;
+      }
+      function saveTimerList(list) {
+        try { localStorage.setItem('mc-timer-list', JSON.stringify(list)); } catch (e) {}
+      }
+
+      var timerList   = [];  // { id, displayName }
+      var timersById  = {};  // id → Timer instance
+
+      /* ── Create DOM for one timer panel ─────────────────────── */
+      function createTimerPanel(id, displayName) {
+        var panel = document.createElement('div');
+        panel.className = 'timer-panel';
+        panel.id = 'panel-' + id;
+        var accentIdx = timerList.findIndex(function (t) { return t.id === id; }) % NUM_ACCENTS;
+        if (accentIdx < 0) accentIdx = 0;
+        panel.setAttribute('data-accent', String(accentIdx));
+
+        panel.innerHTML = [
+          '<button class="close-timer-btn" id="close-' + id + '" aria-label="Remove timer" title="Remove timer">&#xD7;</button>',
+
+          // Name area
+          '<div class="name-area" id="name-area-' + id + '">',
+          '  <span class="player-name" id="name-label-' + id + '" title="Click to rename">' + escHtml(displayName.toUpperCase()) + '</span>',
+          '  <div class="name-edit-wrapper" id="name-edit-wrapper-' + id + '">',
+          '    <label>NAME</label>',
+          '    <input class="name-edit-input" id="name-edit-' + id + '" type="text" maxlength="20" placeholder="Enter name" />',
+          '  </div>',
+          '</div>',
+
+          // SVG circle
+          '<div class="circle-wrapper" id="wrapper-' + id + '">',
+          '  <svg id="svg-' + id + '" viewBox="0 0 220 220">',
+          '    <circle class="circle-bg"    cx="110" cy="110" r="96" />',
+          '    <circle class="circle-track" id="track-' + id + '" cx="110" cy="110" r="96" />',
+          '  </svg>',
+          '  <div class="time-display-group" id="display-group-' + id + '">',
+          '    <span class="time-display" id="display-' + id + '" title="Click to set time">00:00</span>',
+          '    <span class="edit-hint">[ click to set ]</span>',
+          '  </div>',
+          '  <div class="edit-input-wrapper" id="edit-wrapper-' + id + '">',
+          '    <label>SET MINUTES</label>',
+          '    <input class="edit-input" id="edit-' + id + '" type="number" min="0" max="999" step="1" placeholder="5" />',
+          '  </div>',
+          '</div>',
+
+          // Expired message
+          '<div class="expired-msg" id="expired-' + id + '">Minecraft time<br>is over!</div>',
+
+          // Buttons
+          '<div class="btn-row">',
+          '  <button class="mc-btn start-btn" id="start-' + id + '">START</button>',
+          '  <button class="mc-btn pause-btn" id="pause-' + id + '" disabled>PAUSE</button>',
+          '  <button class="mc-btn reset-btn" id="reset-' + id + '">RESET</button>',
+          '</div>',
+        ].join('\n');
+
+        return panel;
+      }
+
+      function escHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      /* ── Update X-button visibility: hide when only one timer ── */
+      function refreshCloseBtns() {
+        var ids = timerList.map(function (t) { return t.id; });
+        ids.forEach(function (id) {
+          var btn = document.getElementById('close-' + id);
+          if (!btn) return;
+          if (timerList.length <= 1) { btn.classList.add('hidden'); }
+          else { btn.classList.remove('hidden'); }
+        });
+      }
+
+      /* ── Timer class ─────────────────────────────────────────── */
+      function Timer(id, displayName) {
+        this.id          = id;
+        this.displayName = displayName;
+        this.expired     = false;
+        this.running     = false;
+        this.interval    = null;
+
+        this.panel       = document.getElementById('panel-' + id);
+        this.track       = document.getElementById('track-' + id);
+        this.display     = document.getElementById('display-' + id);
+        this.displayGroup= document.getElementById('display-group-' + id);
+        this.editWrapper = document.getElementById('edit-wrapper-' + id);
+        this.editInput   = document.getElementById('edit-' + id);
+        this.expiredMsg  = document.getElementById('expired-' + id);
+        this.startBtn    = document.getElementById('start-' + id);
+        this.pauseBtn    = document.getElementById('pause-' + id);
+        this.resetBtn    = document.getElementById('reset-' + id);
+        this.nameLabel   = document.getElementById('name-label-' + id);
+        this.nameEditWrapper = document.getElementById('name-edit-wrapper-' + id);
+        this.nameEditInput   = document.getElementById('name-edit-' + id);
+
+        this.track.style.strokeDasharray  = CIRCUMFERENCE;
+        this.track.style.strokeDashoffset = CIRCUMFERENCE;
+
+        var state = loadState(id);
+        this.totalSeconds = state.totalSeconds;
+        this.remaining    = state.remaining;
+
+        var autoExpire = false, autoResume = false;
+        if (state.running && state.startedAt) {
+          var elapsed      = (Date.now() - state.startedAt) / 1000;
+          var newRemaining = state.remaining - elapsed;
+          if (newRemaining <= 0) { this.remaining = 0; autoExpire = true; }
+          else                   { this.remaining = Math.round(newRemaining); autoResume = true; }
+        }
+
+        this._bindEvents();
+        this._render();
+
+        if (autoExpire)       { this._expire(); }
+        else if (autoResume)  { this._start(); }
+        else if (state.paused){ this.startBtn.textContent = 'RESUME'; }
+      }
+
+      Timer.prototype._bindEvents = function () {
+        var self = this;
+        // Time display click → open time edit
+        this.display.addEventListener('click', function () { self._openTimeEdit(); });
+        this.editInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') self._confirmTimeEdit(); });
+        this.editInput.addEventListener('blur',    function ()  { self._confirmTimeEdit(); });
+        // Name click → open name edit
+        this.nameLabel.addEventListener('click', function () { self._openNameEdit(); });
+        this.nameEditInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') self._confirmNameEdit(); });
+        this.nameEditInput.addEventListener('blur',    function ()  { self._confirmNameEdit(); });
+        // Timer control buttons
+        this.startBtn.addEventListener('click', function () { self._start(); });
+        this.pauseBtn.addEventListener('click', function () { self._pause(); });
+        this.resetBtn.addEventListener('click', function () { self._reset(); });
+      };
+
+      /* ── Time edit ───────────────────────────────────────────── */
+      Timer.prototype._openTimeEdit = function () {
+        if (this.running) return;
+        this.displayGroup.style.visibility = 'hidden';
+        this.editWrapper.classList.add('visible');
+        this.editInput.value = this.totalSeconds > 0 ? Math.ceil(this.totalSeconds / 60) : '';
+        this.editInput.focus();
+        this.editInput.select();
+      };
+      Timer.prototype._confirmTimeEdit = function () {
+        var val = parseFloat(this.editInput.value);
+        if (!isNaN(val) && val >= 0) {
+          this.totalSeconds = Math.round(val * 60);
+          this.remaining    = this.totalSeconds;
+          saveState(this.id, { totalSeconds: this.totalSeconds, remaining: this.remaining, running: false, paused: false, startedAt: null });
+        }
+        this.editWrapper.classList.remove('visible');
+        this.displayGroup.style.visibility = '';
+        this._clearExpired();
+        this._render();
+      };
+
+      /* ── Name edit ───────────────────────────────────────────── */
+      Timer.prototype._openNameEdit = function () {
+        this.nameLabel.style.display = 'none';
+        this.nameEditWrapper.classList.add('visible');
+        this.nameEditInput.value = this.displayName;
+        this.nameEditInput.focus();
+        this.nameEditInput.select();
+      };
+      Timer.prototype._confirmNameEdit = function () {
+        var val = this.nameEditInput.value.trim();
+        if (val.length > 0) {
+          this.displayName = val;
+          this.nameLabel.textContent = val.toUpperCase();
+          // Update persisted list
+          var entry = timerList.find(function (t) { return t.id === this.id; }, this);
+          if (entry) { entry.displayName = val; saveTimerList(timerList); }
+        }
+        this.nameEditWrapper.classList.remove('visible');
+        this.nameLabel.style.display = '';
+      };
+
+      /* ── Timer control ───────────────────────────────────────── */
+      Timer.prototype._saveRunning = function () {
+        saveState(this.id, { totalSeconds: this.totalSeconds, remaining: this.remaining, running: true, paused: false, startedAt: Date.now() });
+      };
+
+      Timer.prototype._start = function () {
+        if (this.running) return;
+        if (this.totalSeconds === 0) return;
+        if (this.expired) this._reset();
+        this.running = true;
+        this.startBtn.disabled = true;
+        this.pauseBtn.disabled = false;
+        this._saveRunning();
+        var self = this;
+        this.interval = setInterval(function () {
+          if (self.remaining <= 0) { self._expire(); return; }
+          self.remaining--;
+          self._saveRunning();
+          self._render();
+          if (self.remaining <= 0) { self._expire(); }
+        }, 1000);
+      };
+
+      Timer.prototype._pause = function () {
+        if (!this.running) return;
+        clearInterval(this.interval);
+        this.interval = null;
+        this.running  = false;
+        this.startBtn.disabled = false;
+        this.startBtn.textContent = 'RESUME';
+        this.pauseBtn.disabled = true;
+        saveState(this.id, { totalSeconds: this.totalSeconds, remaining: this.remaining, running: false, paused: true, startedAt: null });
+      };
+
+      Timer.prototype._reset = function () {
+        clearInterval(this.interval);
+        this.interval = null;
+        this.running  = false;
+        this.remaining = this.totalSeconds;
+        this._clearExpired();
+        this.startBtn.disabled = false;
+        this.startBtn.textContent = 'START';
+        this.pauseBtn.disabled = true;
+        saveState(this.id, { totalSeconds: this.totalSeconds, remaining: this.totalSeconds, running: false, paused: false, startedAt: null });
+        this._render();
+      };
+
+      Timer.prototype._expire = function () {
+        clearInterval(this.interval);
+        this.interval = null;
+        this.running  = false;
+        this.expired  = true;
+        this.remaining = 0;
+        this.startBtn.disabled = true;
+        this.pauseBtn.disabled = true;
+        saveState(this.id, { totalSeconds: this.totalSeconds, remaining: 0, running: false, paused: false, startedAt: null });
+        this.panel.classList.add('expired');
+        this.track.classList.remove('low', 'critical');
+        this.track.classList.add('expired');
+        playAlarm();
+        speak(this.displayName + ', your minecraft time is over! Please turn off your device and give it to Daddy');
+        this.expiredMsg.classList.add('visible');
+        this._render();
+      };
+
+      Timer.prototype._clearExpired = function () {
+        this.expired = false;
+        this.panel.classList.remove('expired');
+        this.expiredMsg.classList.remove('visible');
+        this.track.classList.remove('low', 'critical', 'expired');
+      };
+
+      Timer.prototype.destroy = function () {
+        clearInterval(this.interval);
+        this.interval = null;
+      };
+
+      Timer.prototype._render = function () {
+        var secs = this.remaining;
+        var mm = String(Math.floor(secs / 60)).padStart(2, '0');
+        var ss = String(secs % 60).padStart(2, '0');
+        this.display.textContent = mm + ':' + ss;
+        var fraction = this.totalSeconds > 0 ? secs / this.totalSeconds : 1;
+        this.track.style.strokeDashoffset = CIRCUMFERENCE * (1 - fraction);
+        if (!this.expired) {
+          if (fraction <= 0.1)       { this.track.classList.remove('low');      this.track.classList.add('critical'); }
+          else if (fraction <= 0.25) { this.track.classList.remove('critical'); this.track.classList.add('low'); }
+          else                       { this.track.classList.remove('low', 'critical'); }
+        }
+      };
+
+      /* ── Add timer ───────────────────────────────────────────── */
+      function addTimer() {
+        var id          = 't' + Date.now();
+        var num         = timerList.length + 1;
+        var displayName = 'Timer ' + num;
+        timerList.push({ id: id, displayName: displayName });
+        saveTimerList(timerList);
+        var container = document.getElementById('timers-container');
+        var panel     = createTimerPanel(id, displayName);
+        container.appendChild(panel);
+        var timer = new Timer(id, displayName);
+        timersById[id] = timer;
+        refreshCloseBtns();
+        resizeSVGs();
+        // Immediately open the name edit so user can set a custom name
+        timer._openNameEdit();
+      }
+
+      /* ── Remove timer (with confirmation) ────────────────────── */
+      var pendingRemoveId = null;
+
+      function openConfirm(id) {
+        if (timerList.length <= 1) return; // safety guard (button is hidden anyway)
+        pendingRemoveId = id;
+        var entry = timerList.find(function (t) { return t.id === id; });
+        document.getElementById('confirm-name').textContent = entry ? entry.displayName.toUpperCase() : id;
+        document.getElementById('confirm-overlay').classList.add('visible');
+      }
+
+      function closeConfirm() {
+        document.getElementById('confirm-overlay').classList.remove('visible');
+        pendingRemoveId = null;
+      }
+
+      function executeRemove(id) {
+        var timer = timersById[id];
+        if (timer) { timer.destroy(); delete timersById[id]; }
+        try { localStorage.removeItem('mc-timer-' + id); } catch (e) {}
+        timerList = timerList.filter(function (t) { return t.id !== id; });
+        saveTimerList(timerList);
+        var panel = document.getElementById('panel-' + id);
+        if (panel) panel.remove();
+        refreshCloseBtns();
+        // Re-assign accents to remaining panels so colours stay consistent
+        reassignAccents();
+        resizeSVGs();
+      }
+
+      function reassignAccents() {
+        timerList.forEach(function (t, i) {
+          var panel = document.getElementById('panel-' + t.id);
+          if (panel) panel.setAttribute('data-accent', String(i % NUM_ACCENTS));
+        });
+      }
+
+      /* ── Resize SVGs ─────────────────────────────────────────── */
+      function resizeSVGs() {
+        document.querySelectorAll('.timer-panel').forEach(function (panel) {
+          var size = Math.min(panel.clientWidth * 0.55, panel.clientHeight * 0.50, 300);
+          size = Math.max(size, 110);
+          var svg = panel.querySelector('svg');
+          if (svg) { svg.style.width = size + 'px'; svg.style.height = size + 'px'; }
+        });
+      }
+
+      /* ── Wire up static UI ───────────────────────────────────── */
+      document.getElementById('add-timer-btn').addEventListener('click', addTimer);
+
+      document.getElementById('confirm-cancel').addEventListener('click', closeConfirm);
+      document.getElementById('confirm-overlay').addEventListener('click', function (e) {
+        if (e.target === this) closeConfirm();
+      });
+      document.getElementById('confirm-remove').addEventListener('click', function () {
+        if (pendingRemoveId) { executeRemove(pendingRemoveId); }
+        closeConfirm();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeConfirm();
+      });
+
+      // Wire up close buttons dynamically (event delegation)
+      document.getElementById('timers-container').addEventListener('click', function (e) {
+        var btn = e.target.closest('.close-timer-btn');
+        if (!btn) return;
+        var id = btn.id.replace('close-', '');
+        openConfirm(id);
+      });
+
+      /* ── Init: load list, render all panels ──────────────────── */
+      timerList = loadTimerList();
+      var container = document.getElementById('timers-container');
+      timerList.forEach(function (entry) {
+        var panel = createTimerPanel(entry.id, entry.displayName);
+        container.appendChild(panel);
+        timersById[entry.id] = new Timer(entry.id, entry.displayName);
+      });
+      refreshCloseBtns();
+
+      window.addEventListener('resize', resizeSVGs);
+      resizeSVGs();
+    })();
+  </script>
+</body>
+</html>
