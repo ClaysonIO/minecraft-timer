@@ -136,3 +136,41 @@ Now we're cutting off portions of the interface. See attached.
 Use the browser tool to verify as you attempt to find the perfect balance -- again, your target is the very first image I gave you.
 
 ---
+
+## 17. Research game reskin targets
+
+This is a minecraft timer, but it would be interesting to be able to skin it for different games. 
+
+Come up with a list of 10 populate games for children that would be good targets for reskinning. Search the internet for ideas. 
+
+---
+
+## 18. Theme Skinning System
+
+For the experience, I'd like to be able to press the 'settings' button, and choose from a list of possible themes. This should be a list of buttons to pick from, each button showing off what the potential theme will be. Clicking them will reskin the application. 
+
+We will need a standardized skinning toolkit, so that we can change themes with minimal edits, since we'll have so many variants. We want to ensure that the overall app (buttons, timer, etc) don't change between themes.
+
+---
+
+## 19. Per-theme fonts and effects
+
+The color is good, but we want it to follow themes more closely. The current font may not be correct for each category, for example. 
+
+Attempt to find appropriate fonts for each category. Also , consider if effects should change as well
+
+---
+
+## 20. Microwave-style time input
+
+Let's improve how time is defined, so that we can set hours, minutes, and seconds. 
+
+We don't want multiple fields -- keep it to a single one. To handle this, when we start typing, it just moves things left. For example, if I type '10', that means 10 seconds. If I type '1000', it should become 10:00. If I type '10000', that should become '1:00:00'
+
+---
+
+## 21. Increase max time to 3-digit hours
+
+Increase the maximum time, to three digits worth of hours
+
+---

@@ -1,7 +1,7 @@
 {
-  "name": "Minecraft Timer",
-  "short_name": "MC Timer",
-  "description": "Minecraft-themed countdown timer for managing screen time.",
+  "name": "Game Timer",
+  "short_name": "Game Timer",
+  "description": "Multi-theme countdown timer for managing kids' screen time.",
   "start_url": "./",
   "display": "standalone",
   "orientation": "any",

@@ -1,8 +1,9 @@
-var CACHE_NAME = 'minecraft-timer-v2';
+var CACHE_NAME = 'game-timer-v3';
 
 var SHELL_ASSETS = [
   './',
   './index.html',
+  './themes.js',
   './manifest.json',
   './icons/icon.svg',
   './icons/icon-192.png',
