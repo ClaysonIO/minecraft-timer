@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
+  <!-- Black outer border -->
+  <rect width="64" height="64" fill="#000"/>
+  <!-- Gold frame -->
+  <rect x="4" y="4" width="56" height="56" fill="#8B6914"/>
+  <!-- Dark face -->
+  <rect x="8" y="8" width="48" height="48" fill="#1a120b"/>
+  <!-- 12 o'clock tick -->
+  <rect x="28" y="12" width="8" height="4" fill="#f0c040"/>
+  <!-- 3 o'clock tick -->
+  <rect x="48" y="28" width="4" height="8" fill="#f0c040"/>
+  <!-- 6 o'clock tick -->
+  <rect x="28" y="48" width="8" height="4" fill="#f0c040"/>
+  <!-- 9 o'clock tick -->
+  <rect x="12" y="28" width="4" height="8" fill="#f0c040"/>
+  <!-- Hour hand (pointing up) -->
+  <rect x="28" y="16" width="8" height="16" fill="#f0c040"/>
+  <!-- Minute hand (pointing right, green) -->
+  <rect x="32" y="28" width="12" height="8" fill="#5d8c3d"/>
+  <!-- Center hub -->
+  <rect x="28" y="28" width="8" height="8" fill="#f0c040"/>
+</svg>

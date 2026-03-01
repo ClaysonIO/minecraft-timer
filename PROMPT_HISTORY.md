@@ -108,3 +108,15 @@ Add a new settings cog in the top left. Clicking it should open a dialog that le
 Also, the flashing should end after 30 seconds, and just go to a flat red until it's reset.
 
 ---
+
+## 13. Minecraft SVG favicon embedded in HTML
+
+Create a neat, theme appropriate favicon in SVG for this page. If possible, embed it into the HTML.
+
+---
+
+## 14. Convert app to PWA
+
+Turn this application into a PWA, so we can save it to a phone.
+
+---
