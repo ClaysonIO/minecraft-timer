@@ -120,3 +120,19 @@ Create a neat, theme appropriate favicon in SVG for this page. If possible, embe
 Turn this application into a PWA, so we can save it to a phone.
 
 ---
+
+## 15. Responsive timer scaling
+
+The timer looks good at some resolutions. See the first example attached. 
+
+However, on a larger screen, or mobile (see the next two attachments) we end up with a small timer in the center of thes screen. I'd like this to take up the majority of the available screen real estate, so that at any screen resolution, it's similar to the first view.
+
+---
+
+## 16. Fix overflow after responsive scaling
+
+Now we're cutting off portions of the interface. See attached. 
+
+Use the browser tool to verify as you attempt to find the perfect balance -- again, your target is the very first image I gave you.
+
+---

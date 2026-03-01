@@ -33,7 +33,7 @@
         repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(0,0,0,0.25) 31px, rgba(0,0,0,0.25) 32px),
         repeating-linear-gradient(90deg, transparent, transparent 31px, rgba(0,0,0,0.25) 31px, rgba(0,0,0,0.25) 32px),
         linear-gradient(135deg, #2d4a1e 0%, #1a2e0f 30%, #3b2a1a 60%, #1a120b 100%);
-      min-height: 100vh;
+      height: 100vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -86,8 +86,10 @@
       display: flex;
       flex-wrap: wrap;
       flex: 1;
-      overflow: auto;
+      overflow-x: hidden;
+      overflow-y: auto;
       align-content: stretch;
+      min-height: 0;
     }
 
     /* Each panel fills equally; min-width means they wrap below ~280px */
@@ -164,6 +166,8 @@
     .close-timer-btn.hidden { display: none; }
 
     /* ── Player name ─────────────────────────────────────────── */
+    .name-area { flex-shrink: 0; }
+
     .player-name {
       font-size: clamp(11px, 2vw, 20px);
       letter-spacing: 3px;
@@ -205,6 +209,7 @@
 
     /* ── SVG Circle Timer ────────────────────────────────────── */
     .circle-wrapper {
+      flex-shrink: 0;
       position: relative;
       cursor: pointer;
     }
@@ -241,7 +246,7 @@
       width: 100%;
     }
     .time-display {
-      font-size: clamp(15px, 3vw, 30px);
+      font-size: clamp(15px, 5vmin, 80px);
       color: #fff;
       text-shadow: 2px 2px 0 #000;
       cursor: pointer;
@@ -252,7 +257,7 @@
       image-rendering: pixelated;
     }
     .edit-hint {
-      font-size: clamp(6px, 0.7vw, 8px);
+      font-size: clamp(6px, 1.2vmin, 12px);
       color: rgba(255,255,255,0.4);
       margin-top: 5px;
       display: block;
@@ -288,7 +293,7 @@
     .edit-input:focus { border-color: #fff; box-shadow: 3px 3px 0 #555, inset 2px 2px 0 #222; }
 
     /* ── Buttons ─────────────────────────────────────────────── */
-    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; flex-shrink: 0; }
 
     .mc-btn {
       font-family: 'Press Start 2P', monospace;
@@ -333,6 +338,7 @@
 
     /* ── Expired message ─────────────────────────────────────── */
     .expired-msg {
+      flex-shrink: 0;
       font-size: clamp(9px, 1.2vw, 12px);
       color: #fff;
       text-shadow: 2px 2px 0 #000, 0 0 10px #ff0000;
@@ -958,10 +964,41 @@
       /* ── Resize SVGs ─────────────────────────────────────────── */
       function resizeSVGs() {
         document.querySelectorAll('.timer-panel').forEach(function (panel) {
-          var size = Math.min(panel.clientWidth * 0.55, panel.clientHeight * 0.50, 300);
-          size = Math.max(size, 110);
           var svg = panel.querySelector('svg');
-          if (svg) { svg.style.width = size + 'px'; svg.style.height = size + 'px'; }
+          if (!svg) return;
+
+          /* Zero-out SVG so sibling measurements are unaffected */
+          svg.style.width  = '0';
+          svg.style.height = '0';
+
+          var style     = getComputedStyle(panel);
+          var padV      = (parseFloat(style.paddingTop)    || 0) + (parseFloat(style.paddingBottom) || 0);
+          var padH      = (parseFloat(style.paddingLeft)   || 0) + (parseFloat(style.paddingRight)  || 0);
+          var gapSize   = parseFloat(style.gap) || 0;
+
+          /* clientHeight/Width already include padding */
+          var usableH   = panel.clientHeight - padV;
+          var usableW   = panel.clientWidth  - padH;
+
+          /* Sum all other in-flow flex children */
+          var fixedH = 0;
+          var gaps   = 0;
+          panel.children && Array.prototype.forEach.call(panel.children, function (child) {
+            if (child === svg.parentElement) return;          /* skip circle-wrapper */
+            var cs = getComputedStyle(child);
+            if (cs.display === 'none' || cs.position === 'absolute') return;
+            fixedH += child.offsetHeight;
+            gaps   += gapSize;
+          });
+          /* One extra gap accounts for the gap before/after the circle-wrapper itself */
+          gaps += gapSize;
+
+          var available = usableH - fixedH - gaps;
+          var size      = Math.min(available, usableW);
+          size          = Math.max(size, 110);
+
+          svg.style.width  = size + 'px';
+          svg.style.height = size + 'px';
         });
       }
 
