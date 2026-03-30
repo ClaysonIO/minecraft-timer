@@ -1357,26 +1357,29 @@
         var rows = Math.ceil(panels.length / cols);
         var panelH = Math.floor(containerH / rows);
 
-        // Set explicit height on each panel so they share space equally
+        // Pass 1: set panel heights and reset SVGs
         panels.forEach(function (panel) {
           panel.style.height = panelH + 'px';
+          var svg = panel.querySelector('svg');
+          if (svg) {
+            svg.style.width  = '0';
+            svg.style.height = '0';
+          }
+        });
 
+        // Force reflow so wrapper dimensions reflect new panel heights
+        container.offsetHeight;
+
+        // Pass 2: size SVGs to fit the remaining wrapper space
+        panels.forEach(function (panel) {
           var svg = panel.querySelector('svg');
           if (!svg) return;
           var wrapper = svg.parentElement;
-
-          // Reset SVG so the flex wrapper can reclaim space
-          svg.style.width  = '0';
-          svg.style.height = '0';
-
-          // Wrapper is flex:1, so it gets the remaining space after
-          // fixed-height siblings (name, buttons)
           var wW = wrapper.clientWidth;
           var wH = wrapper.clientHeight;
           var padding = 4;
           var size = Math.min(wW, wH) - padding * 2;
           size = Math.max(size, 60);
-
           svg.style.width  = size + 'px';
           svg.style.height = size + 'px';
         });
