@@ -146,24 +146,23 @@
     .add-timer-btn:hover { filter: brightness(1.2); }
     .add-timer-btn:active { transform: translateY(calc(-50% + 3px)); box-shadow: 0 1px 0 var(--hdr-btn-add-shadow), inset 0 1px 0 rgba(0,0,0,0.3); }
 
-    /* ── Timers container: grid tiling ─────────────────────── */
+    /* ── Timers container: flex wrap tiling ──────────────────── */
     .timers-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      grid-auto-rows: 1fr;
+      display: flex;
+      flex-wrap: wrap;
       flex: 1;
       overflow: hidden;
       min-height: 0;
     }
 
-    /* Each panel: internal column layout, circle fills remaining space */
+    /* Each panel fills equally; JS sets explicit height for equal rows */
     .timer-panel {
+      flex: 1 1 280px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: clamp(10px, 2vh, 20px);
-      gap: clamp(6px, 1vh, 16px);
+      padding: clamp(8px, 1.5vh, 20px);
+      gap: clamp(4px, 0.8vh, 12px);
       position: relative;
       border: 2px solid #000;
       min-height: 0;
@@ -1343,9 +1342,25 @@
         });
       }
 
-      /* ── Resize SVGs ─────────────────────────────────────────── */
+      /* ── Resize panels & SVGs ────────────────────────────────── */
       function resizeSVGs() {
-        document.querySelectorAll('.timer-panel').forEach(function (panel) {
+        var container = document.getElementById('timers-container');
+        if (!container) return;
+        var panels = Array.from(container.querySelectorAll('.timer-panel'));
+        if (!panels.length) return;
+
+        var containerW = container.clientWidth;
+        var containerH = container.clientHeight;
+
+        // Calculate how many columns fit (matching CSS flex-basis of 280px)
+        var cols = Math.max(1, Math.floor(containerW / 280));
+        var rows = Math.ceil(panels.length / cols);
+        var panelH = Math.floor(containerH / rows);
+
+        // Set explicit height on each panel so they share space equally
+        panels.forEach(function (panel) {
+          panel.style.height = panelH + 'px';
+
           var svg = panel.querySelector('svg');
           if (!svg) return;
           var wrapper = svg.parentElement;
@@ -1354,7 +1369,8 @@
           svg.style.width  = '0';
           svg.style.height = '0';
 
-          // Wrapper is flex:1, so it already has the correct available space
+          // Wrapper is flex:1, so it gets the remaining space after
+          // fixed-height siblings (name, buttons)
           var wW = wrapper.clientWidth;
           var wH = wrapper.clientHeight;
           var padding = 4;
