@@ -126,11 +126,17 @@
       image-rendering: pixelated;
     }
 
-    .add-timer-btn {
+    .header-actions {
       position: absolute;
       right: 14px;
       top: 50%;
       transform: translateY(-50%);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .add-timer-btn {
       font-family: var(--font-family);
       font-size: clamp(14px, 2vw, 20px);
       line-height: 1;
@@ -144,7 +150,29 @@
       image-rendering: pixelated;
     }
     .add-timer-btn:hover { filter: brightness(1.2); }
-    .add-timer-btn:active { transform: translateY(calc(-50% + 3px)); box-shadow: 0 1px 0 var(--hdr-btn-add-shadow), inset 0 1px 0 rgba(0,0,0,0.3); }
+    .add-timer-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--hdr-btn-add-shadow), inset 0 1px 0 rgba(0,0,0,0.3); }
+
+    .toggle-all-btn {
+      font-family: var(--font-family);
+      font-size: clamp(14px, 2vw, 20px);
+      line-height: 1;
+      padding: 6px 12px 8px;
+      background: var(--btn-pause-bg);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      text-shadow: 1px 1px 0 #000;
+      box-shadow: 0 4px 0 var(--btn-pause-shadow), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.3);
+      image-rendering: pixelated;
+    }
+    .toggle-all-btn.start-state {
+      background: var(--btn-start-bg);
+      box-shadow: 0 4px 0 var(--btn-start-shadow), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.3);
+    }
+    .toggle-all-btn:hover { filter: brightness(1.2); }
+    .toggle-all-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--btn-pause-shadow), inset 0 1px 0 rgba(0,0,0,0.3); }
+    .toggle-all-btn.start-state:active { box-shadow: 0 1px 0 var(--btn-start-shadow), inset 0 1px 0 rgba(0,0,0,0.3); }
+    .toggle-all-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     /* ── Timers container: flex wrap tiling ──────────────────── */
     .timers-container {
@@ -665,7 +693,8 @@
       }
 
       .settings-btn,
-      .add-timer-btn {
+      .add-timer-btn,
+      .toggle-all-btn {
         font-size: clamp(14px, 3.5vw, 18px);
         padding: 8px 12px 10px;
       }
@@ -684,7 +713,10 @@
   <header>
     <button class="settings-btn" id="settings-btn" title="Settings">&#9881;</button>
     <h1 id="app-title">&#9733; MINECRAFT TIMER &#9733;</h1>
-    <button class="add-timer-btn" id="add-timer-btn" title="Add new timer">+</button>
+    <div class="header-actions">
+      <button class="toggle-all-btn start-state" id="toggle-all-btn" title="Start all timers">&#9654;</button>
+      <button class="add-timer-btn" id="add-timer-btn" title="Add new timer">+</button>
+    </div>
   </header>
 
   <div class="timers-container" id="timers-container"></div>
@@ -1141,6 +1173,7 @@
         this.displayGroup.style.visibility = '';
         this._clearExpired();
         this._render();
+        updateToggleAllBtn();
       };
 
       /* ── Name edit ───────────────────────────────────────────── */
@@ -1184,6 +1217,7 @@
           self._render();
           if (self.remaining <= 0) { self._expire(); }
         }, 1000);
+        updateToggleAllBtn();
       };
 
       Timer.prototype._pause = function () {
@@ -1195,6 +1229,7 @@
         this.startBtn.textContent = 'RESUME';
         this.pauseBtn.disabled = true;
         saveState(this.id, { totalSeconds: this.totalSeconds, remaining: this.remaining, running: false, paused: true, startedAt: null });
+        updateToggleAllBtn();
       };
 
       Timer.prototype._reset = function () {
@@ -1208,6 +1243,7 @@
         this.pauseBtn.disabled = true;
         saveState(this.id, { totalSeconds: this.totalSeconds, remaining: this.totalSeconds, running: false, paused: false, startedAt: null });
         this._render();
+        updateToggleAllBtn();
       };
 
       Timer.prototype._expire = function () {
@@ -1235,6 +1271,7 @@
           self.expiredFlatTimeoutId = null;
         }, 30000);
         this._render();
+        updateToggleAllBtn();
       };
 
       Timer.prototype._clearExpired = function () {
@@ -1296,6 +1333,7 @@
         applyAccentToPanel(panel, accentIdx, theme);
         refreshCloseBtns();
         resizeSVGs();
+        updateToggleAllBtn();
         timer._openNameEdit();
       }
 
@@ -1326,6 +1364,7 @@
         refreshCloseBtns();
         reassignAccents();
         resizeSVGs();
+        updateToggleAllBtn();
       }
 
       function reassignAccents() {
@@ -1438,8 +1477,55 @@
         if (e.target === this) cancelSettings();
       });
 
+      /* ── Toggle all timers ───────────────────────────────────── */
+      function anyRunning() {
+        return Object.keys(timersById).some(function (id) { return timersById[id].running; });
+      }
+
+      function canStartAny() {
+        return Object.keys(timersById).some(function (id) {
+          var t = timersById[id];
+          return !t.running && t.totalSeconds > 0;
+        });
+      }
+
+      function toggleAll() {
+        if (anyRunning()) {
+          Object.keys(timersById).forEach(function (id) {
+            var t = timersById[id];
+            if (t.running) t._pause();
+          });
+        } else {
+          Object.keys(timersById).forEach(function (id) {
+            var t = timersById[id];
+            if (!t.running && t.totalSeconds > 0) {
+              if (t.expired) t._reset();
+              t._start();
+            }
+          });
+        }
+        updateToggleAllBtn();
+      }
+
+      function updateToggleAllBtn() {
+        var btn = document.getElementById('toggle-all-btn');
+        if (!btn) return;
+        if (anyRunning()) {
+          btn.innerHTML = '\u23F8';
+          btn.title = 'Pause all timers';
+          btn.classList.remove('start-state');
+          btn.disabled = false;
+        } else {
+          btn.innerHTML = '\u25B6';
+          btn.title = 'Start all timers';
+          btn.classList.add('start-state');
+          btn.disabled = !canStartAny();
+        }
+      }
+
       /* ── Confirm dialog wiring ───────────────────────────────── */
       document.getElementById('add-timer-btn').addEventListener('click', addTimer);
+      document.getElementById('toggle-all-btn').addEventListener('click', toggleAll);
 
       document.getElementById('confirm-cancel').addEventListener('click', closeConfirm);
       document.getElementById('confirm-overlay').addEventListener('click', function (e) {
@@ -1485,6 +1571,7 @@
       applyAccentsToAllPanels(initTheme);
 
       refreshCloseBtns();
+      updateToggleAllBtn();
 
       window.addEventListener('resize', resizeSVGs);
       resizeSVGs();
