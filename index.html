@@ -179,24 +179,22 @@
       display: flex;
       flex-wrap: wrap;
       flex: 1;
-      overflow-x: hidden;
-      overflow-y: auto;
-      align-content: stretch;
+      overflow: hidden;
       min-height: 0;
     }
 
-    /* Each panel fills equally; min-width means they wrap below ~280px */
+    /* Each panel fills equally; JS sets explicit height for equal rows */
     .timer-panel {
       flex: 1 1 280px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 20px;
-      gap: 16px;
+      padding: clamp(8px, 1.5vh, 20px);
+      gap: clamp(4px, 0.8vh, 12px);
       position: relative;
       border: 2px solid #000;
-      min-height: 340px;
+      min-height: 0;
+      overflow: hidden;
       border-radius: var(--panel-border-radius);
     }
 
@@ -292,7 +290,7 @@
       font-size: clamp(11px, 2vw, 20px);
       letter-spacing: 3px;
       text-shadow: 2px 2px 0 #000;
-      padding: 8px 16px;
+      padding: clamp(4px, 0.8vh, 8px) 16px;
       border: 3px solid;
       image-rendering: pixelated;
       cursor: pointer;
@@ -330,7 +328,12 @@
 
     /* ── SVG Circle Timer ────────────────────────────────────── */
     .circle-wrapper {
-      flex-shrink: 0;
+      flex: 1 1 0;
+      min-height: 0;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       position: relative;
       cursor: pointer;
     }
@@ -419,8 +422,8 @@
 
     .mc-btn {
       font-family: var(--font-family);
-      font-size: clamp(7px, 1.1vw, 11px);
-      padding: clamp(7px, 1vw, 10px) clamp(8px, 1.4vw, 14px);
+      font-size: clamp(6px, 1.1vw, 11px);
+      padding: clamp(5px, 0.8vh, 10px) clamp(8px, 1.4vw, 14px);
       border: none;
       cursor: pointer;
       image-rendering: pixelated;
@@ -700,7 +703,7 @@
       }
 
       .timer-panel {
-        padding: 20px 20px 28px;
+        padding: clamp(8px, 2vh, 20px) clamp(8px, 2vw, 20px) clamp(10px, 2vh, 28px);
       }
 
       #theme-picker-grid {
@@ -1378,38 +1381,44 @@
         });
       }
 
-      /* ── Resize SVGs ─────────────────────────────────────────── */
+      /* ── Resize panels & SVGs ────────────────────────────────── */
       function resizeSVGs() {
-        document.querySelectorAll('.timer-panel').forEach(function (panel) {
+        var container = document.getElementById('timers-container');
+        if (!container) return;
+        var panels = Array.from(container.querySelectorAll('.timer-panel'));
+        if (!panels.length) return;
+
+        var containerW = container.clientWidth;
+        var containerH = container.clientHeight;
+
+        // Calculate how many columns fit (matching CSS flex-basis of 280px)
+        var cols = Math.max(1, Math.floor(containerW / 280));
+        var rows = Math.ceil(panels.length / cols);
+        var panelH = Math.floor(containerH / rows);
+
+        // Pass 1: set panel heights and reset SVGs
+        panels.forEach(function (panel) {
+          panel.style.height = panelH + 'px';
+          var svg = panel.querySelector('svg');
+          if (svg) {
+            svg.style.width  = '0';
+            svg.style.height = '0';
+          }
+        });
+
+        // Force reflow so wrapper dimensions reflect new panel heights
+        container.offsetHeight;
+
+        // Pass 2: size SVGs to fit the remaining wrapper space
+        panels.forEach(function (panel) {
           var svg = panel.querySelector('svg');
           if (!svg) return;
-
-          svg.style.width  = '0';
-          svg.style.height = '0';
-
-          var style     = getComputedStyle(panel);
-          var padV      = (parseFloat(style.paddingTop)    || 0) + (parseFloat(style.paddingBottom) || 0);
-          var padH      = (parseFloat(style.paddingLeft)   || 0) + (parseFloat(style.paddingRight)  || 0);
-          var gapSize   = parseFloat(style.gap) || 0;
-
-          var usableH   = panel.clientHeight - padV;
-          var usableW   = panel.clientWidth  - padH;
-
-          var fixedH = 0;
-          var gaps   = 0;
-          panel.children && Array.prototype.forEach.call(panel.children, function (child) {
-            if (child === svg.parentElement) return;
-            var cs = getComputedStyle(child);
-            if (cs.display === 'none' || cs.position === 'absolute') return;
-            fixedH += child.offsetHeight;
-            gaps   += gapSize;
-          });
-          gaps += gapSize;
-
-          var available = usableH - fixedH - gaps;
-          var size      = Math.min(available, usableW);
-          size          = Math.max(size, 110);
-
+          var wrapper = svg.parentElement;
+          var wW = wrapper.clientWidth;
+          var wH = wrapper.clientHeight;
+          var padding = 4;
+          var size = Math.min(wW, wH) - padding * 2;
+          size = Math.max(size, 60);
           svg.style.width  = size + 'px';
           svg.style.height = size + 'px';
         });
